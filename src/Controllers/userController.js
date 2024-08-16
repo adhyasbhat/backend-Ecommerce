@@ -57,19 +57,61 @@ userController.userLogin = async (req, res) => {
   }
 };
 userController.userCart = async (req, res) => {
-        try{
-            const user = await userModel.findEmail({email: req.body.email});
-            if(!user){
-                return res.status(404).json({message: "User not found"});
-            }
-            const {productId, quantity} = req.body;
-            const product = await productModel.findOne({productID: productId});
-            if(!product){
-                return res.status(404).json({message: "Product not found"});
-            }
+    try {
+      const user = await userModel.findOne({ email: req.body.email });
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+  
+      const { productId, quantity } = req.body;
+      const product = await productModel.findOne({ _id: productId });
+      if (!product) {
+        return res.status(404).json({ message: "Product not found" });
+      }
+  
+      if (product.stockQuantity < quantity) {
+        return res.status(400).json({ message: "Product is out of stock" });
+      }
+      const cartItemIndex = user.cartData.findIndex(item => item.productId.equals(productId));
+  
+      if (cartItemIndex !== -1) {
+        user.cartData[cartItemIndex].quantity += quantity;
+  
+        if (user.cartData[cartItemIndex].quantity > product.stockQuantity) {
+          return res.status(400).json({ message: "Quantity exceeds available stock" });
         }
-        catch(error){
-            res.status(500).json({message: "Internal server error"});
+      } else {
+        user.cartData.push({ productId, quantity });
+      }
+  
+      await user.save();
+      res.status(200).json({ message: "Product added to cart successfully", cart: user.cartData });
+    } catch (error) {
+      res.status(500).json({ message: "Internal server error" });
+    }
+  };
+    userController.userWishlist = async (req, res) => {
+        try {
+        const {email , productId} = req.body;
+        const user = await userModel.findOne({ email})
+        if (!user) {
+            return res.status(404).json({ message: "User not found" });
         }
+        const product = await productModel.findOne({ _id: productId });
+        if (!product) {
+            return res.status(404).json({ message: "Product not found" });
+        }
+        const wishlistItemIndex = user.wishlistData.findIndex(item => item.productId.equals(productId));
+        if (wishlistItemIndex !== -1) {
+            return res.status(400).json({ message: "Product already in wishlist" });
+        }
+        user.wishlistData.push({ productId });
+        await user.save();
+        res.status(200).json({ message: "Product added to wishlist successfully", wishlist: user.wishlistData });
+        }
+        catch (error) {
+            res.status(500).json({ message: "Internal server error" });
+        }
+    }
 
-};
+export default userController;

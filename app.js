@@ -10,6 +10,13 @@ app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.json());
 const corsOptions = { origin: "http://localhost:5174" };
 
+const productRoutes = require('./src/Routes/productlistRoutes');
+const userRoutes = require('./src/Routes/userRoutes');
+
+app.use(cors(corsOptions));
+app.use('/api', productRoutes);
+app.use('/api', userRoutes);
+
 mongoose.connect("mongodb+srv://adhyacsg:4q8fCgU29ttYNWpi@cluster0.ywnnb.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0", {
     useNewUrlParser: true,
     useUnifiedTopology: true,
